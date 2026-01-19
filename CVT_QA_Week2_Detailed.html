@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 설계 문서 - 검색 기능</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #7c3aed;
+            --primary-light: #f3e8ff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --border-color: #e5e7eb;
+            --sidebar-width: 280px;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+        }
+        
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .header-meta {
+            margin-left: auto;
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - 60px);
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 2rem 0;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+        
+        .toc-title {
+            padding: 0 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+        
+        .toc-item {
+            display: block;
+            padding: 0.5rem 1.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .toc-item:hover {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+        
+        .toc-item.active {
+            background: var(--primary-light);
+            color: var(--primary-color);
+            font-weight: 500;
+            border-left-color: var(--primary-color);
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: 60px;
+            padding: 3rem;
+            max-width: 900px;
+        }
+        
+        .page-header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+        
+        .page-meta {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .meta-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        /* Content Sections */
+        .content-section {
+            margin-bottom: 3rem;
+            scroll-margin-top: 80px;
+        }
+        
+        .section-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .section-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .section-content h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .section-content p {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        /* Lists */
+        .notion-list {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .notion-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+        
+        /* Tables */
+        .notion-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .notion-table thead {
+            background: var(--bg-secondary);
+        }
+        
+        .notion-table th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .notion-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+        
+        .notion-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .notion-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Callout Boxes */
+        .callout {
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            border-left: 4px solid;
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .callout.info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        
+        .callout.info::before {
+            content: "ℹ️";
+            font-size: 1.25rem;
+        }
+        
+        .callout.warning {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        
+        .callout.warning::before {
+            content: "⚠️";
+            font-size: 1.25rem;
+        }
+        
+        .callout.success {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+        
+        .callout.success::before {
+            content: "✅";
+            font-size: 1.25rem;
+        }
+        
+        .callout p {
+            margin: 0;
+        }
+        
+        /* Code Blocks */
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            font-family: 'Courier New', Consolas, monospace;
+        }
+        
+        code {
+            font-family: 'Courier New', Consolas, monospace;
+            background: var(--bg-secondary);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.875em;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        /* Divider */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 2rem 0;
+        }
+        
+        /* Checkboxes */
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 2rem 1.5rem;
+            }
+            
+            .header-meta {
+                display: none;
+            }
+        }
+        
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">📚 모바일 앱 CVT QA 신입 교육 과정</div>
+        <div class="header-meta">
+            <span>버전 1.0</span>
+            <span>2026-01-19</span>
+        </div>
+    </header>
+
+    <aside class="sidebar">
+        <div class="toc-title">목차</div>
+        <a href="#section-0" class="toc-item">0) Week 2에서 신입이 반드시 달성해야 하는 역량(Exit Competency)</a>
+<a href="#section-1" class="toc-item">1) Week 2 운영 규칙(현장형)</a>
+<a href="#section-2" class="toc-item">2) Day 6 — 화면 간 전환 및 라우팅 이해</a>
+<a href="#section-3" class="toc-item">3) Day 7 — 데이터 흐름 및 상태 동기화</a>
+<a href="#section-4" class="toc-item">4) Day 8 — 조합 테스트 설계 (3축 조합)</a>
+<a href="#section-5" class="toc-item">5) Day 9 — E2E(End-to-End) 시나리오 작성</a>
+<a href="#section-6" class="toc-item">E2E-001: 알림을 통한 댓글 작성</a>
+<a href="#section-7" class="toc-item">6) Day 10 — 테스트 설계 문서 작성 및 Week 2 총정리</a>
+<a href="#section-8" class="toc-item">1. 테스트 범위</a>
+<a href="#section-9" class="toc-item">2. 화면 흐름도</a>
+<a href="#section-10" class="toc-item">3. 데이터 흐름</a>
+<a href="#section-11" class="toc-item">4. 조합 테스트</a>
+<a href="#section-12" class="toc-item">5. E2E 시나리오</a>
+<a href="#section-13" class="toc-item">6. 예상 결함 가설 Top 10</a>
+<a href="#section-14" class="toc-item">7) Week 2 최종 평가 (패키지 제출)</a>
+<a href="#section-15" class="toc-item">8) 강사용 운영 팁</a>
+<a href="#section-16" class="toc-item">9) Week 2 → Week 3 연결</a>
+
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">테스트 설계 문서 - 검색 기능</h1>
+            <div class="page-meta">
+                <div class="meta-item">
+                    <span class="meta-label">대상:</span>
+                    <span>모바일 앱 QA 신입 (Week 1 완료자)</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">목표:</span>
+                    <span>화면을 체계적으로 분해하고, 조합 테스트를 설계할 수 있다.</span>
+                </div>
+            </div>
+        </div>
+
+        
+        <section id="section-0" class="content-section">
+            <h2 class="section-title">0) Week 2에서 신입이 반드시 달성해야 하는 역량(Exit Competency)</h2>
+            <div class="section-content">
+                <p>아래를 <strong>스스로 수행</strong>할 수 있어야 한다.</p>
+
+<p>1. 화면 간 전환(라우팅) 및 데이터 흐름을 파악할 수 있다.</p>
+<p>2. 조합 테스트 축(사용자 상태 × 네트워크 × 권한)을 선정하고 시나리오를 만든다.</p>
+<p>3. E2E(End-to-End) 시나리오를 작성하고 수행할 수 있다.</p>
+<p>4. 결함 가설을 "조건 + 행동 + 기대 + 위험" 공식으로 작성한다.</p>
+<p>5. 테스트 설계 문서(Test Design)를 작성할 수 있다.</p>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-1" class="content-section">
+            <h2 class="section-title">1) Week 2 운영 규칙(현장형)</h2>
+            <div class="section-content">
+                <h3>1.1 시간표(권장 90분 기준)</h3>
+<ul class="notion-list">
+<li>0~10분: 오늘 목표 및 Week 1 복습</li>
+<li>10~30분: 이론(원리 + 예시)</li>
+<li>30~80분: 실습(화면 분석 또는 시나리오 작성)</li>
+<li>80~90분: 산출물 리뷰 및 피드백</li>
+</ul>
+
+<h3>1.2 산출물 제출 규칙(매일)</h3>
+<ul class="notion-list">
+<li>파일명 예시: `W2D6_FlowMap.md`, `W2D8_E2E_Scenarios.md`</li>
+<li>모든 산출물은 "다이어그램 또는 표" 형태로 시각화</li>
+<li>시나리오는 "조건 → 행동 → 기대 결과" 구조 필수</li>
+</ul>
+
+<h3>1.3 "오늘 반드시 하는 3가지" 공통 체크</h3>
+<ul class="notion-list">
+<li>(1) 화면 흐름도(Flow Map) 또는 조합표 1개 이상 작성</li>
+<li>(2) E2E 시나리오 최소 3개 작성</li>
+<li>(3) 결함 가설 최소 5개 도출</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-2" class="content-section">
+            <h2 class="section-title">2) Day 6 — 화면 간 전환 및 라우팅 이해</h2>
+            <div class="section-content">
+                <h3>2.1 학습 목표</h3>
+<ul class="notion-list">
+<li>앱의 화면 흐름을 그릴 수 있다.</li>
+<li>라우팅(딥링크/알림/외부 앱) 진입 경로를 파악한다.</li>
+</ul>
+
+<h3>2.2 이론(핵심 개념)</h3>
+<h4>2.2.1 화면 전환의 3가지 패턴</h4>
+<p>1. <strong>일반 전환</strong>: A → B → C (탭/버튼 클릭)</p>
+<p>2. <strong>딥링크 진입</strong>: 알림/링크 클릭 → 특정 화면 직접 진입</p>
+<p>3. <strong>외부 앱 복귀</strong>: 앱 전환 (카메라/갤러리/결제) 후 복귀</p>
+
+<h4>2.2.2 라우팅 결함 패턴</h4>
+<ul class="notion-list">
+<li>로그인 후 목적지 복귀 실패 (딥링크)</li>
+<li>스택 꼬임 (뒤로가기 시 이전 화면 없음)</li>
+<li>탭 전환 후 스크롤/필터 상태 초기화</li>
+</ul>
+
+<h4>2.2.3 화면 흐름도(Flow Map) 작성 규칙</h4>
+<pre class="code-block"><code class="">[홈] → [리스트] → [상세]
+<p>↓         ↓</p>
+<p>[설정]    [검색]</p>
+<p>↓</p>
+<p>[로그아웃] → [로그인]</p>
+</code></pre>
+
+<h3>2.3 실습(70분)</h3>
+<h4>Step 1) 핵심 화면 5개 선정 (10분)</h4>
+<ul class="notion-list">
+<li>로그인, 홈, 리스트, 상세, 설정</li>
+</ul>
+
+<h4>Step 2) 화면 흐름도 작성 (30분)</h4>
+<ul class="notion-list">
+<li>일반 전환 경로 표시</li>
+<li>딥링크/알림 진입 경로 추가</li>
+<li>외부 앱 복귀 경로 추가</li>
+</ul>
+
+<h4>Step 3) 라우팅 테스트 포인트 도출 (20분)</h4>
+<ul class="notion-list">
+<li>각 경로에서 테스트해야 할 항목 작성</li>
+</ul>
+
+<p>예시:</p>
+<table class="notion-table">
+<thead>
+<tr>
+<th>경로</th>
+<th>테스트 포인트</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>알림 → 상세</td>
+<td>로그인 안 된 경우 로그인 후 목적지 복귀</td>
+</tr>
+<tr>
+<td>상세 → 카메라 → 복귀</td>
+<td>상세 화면 데이터 유지</td>
+</tr>
+<tr>
+<td>탭1 → 탭2 → 탭1</td>
+<td>스크롤 위치 유지</td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>Step 4) 정리 (10분)</h4>
+<ul class="notion-list">
+<li>핵심 라우팅 시나리오 Top 5 선정</li>
+</ul>
+
+<h3>2.4 산출물</h3>
+<ul class="notion-list">
+<li>`W2D6_FlowMap.md`: 화면 흐름도 (텍스트 또는 다이어그램)</li>
+<li>`W2D6_RoutingTestPoints.md`: 라우팅 테스트 포인트 표</li>
+</ul>
+
+<h3>2.5 평가 루브릭</h3>
+<ul class="notion-list">
+<li>(A) 화면 흐름도가 완전하다 (누락된 경로 없음)</li>
+<li>(B) 딥링크/외부 앱 복귀 경로 포함</li>
+<li>(C) 테스트 포인트가 구체적이고 실행 가능</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-3" class="content-section">
+            <h2 class="section-title">3) Day 7 — 데이터 흐름 및 상태 동기화</h2>
+            <div class="section-content">
+                <h3>3.1 학습 목표</h3>
+<ul class="notion-list">
+<li>화면 간 데이터 전달 및 상태 동기화를 이해한다.</li>
+<li>데이터 정합성 결함을 발견할 수 있다.</li>
+</ul>
+
+<h3>3.2 이론(핵심 개념)</h3>
+<h4>3.2.1 데이터 흐름 패턴</h4>
+<p>1. <strong>단방향</strong>: A → B (A에서 B로 데이터 전달)</p>
+<p>2. <strong>양방향</strong>: A ↔ B (B에서 수정 후 A 갱신)</p>
+<p>3. <strong>글로벌 상태</strong>: 모든 화면에서 공유 (로그인 정보, 설정)</p>
+
+<h4>3.2.2 데이터 정합성 결함 패턴</h4>
+<ul class="notion-list">
+<li>화면 A에서 삭제했는데 화면 B에 여전히 표시</li>
+<li>설정 토글 변경 후 다른 화면에서 미반영</li>
+<li>캐시와 서버 데이터 불일치</li>
+</ul>
+
+<h4>3.2.3 상태 동기화 체크 규칙</h4>
+<ul class="notion-list">
+<li>데이터 변경 → 관련 화면 모두 확인</li>
+<li>로그아웃 → 모든 개인 정보 초기화 확인</li>
+<li>설정 변경 → 앱 전체에 반영 확인</li>
+</ul>
+
+<h3>3.3 실습(70분)</h3>
+<h4>Step 1) 데이터 변경 시나리오 5개 선정 (15분)</h4>
+<p>예시:</p>
+<ul class="notion-list">
+<li>리스트에서 아이템 삭제 → 상세 화면 확인</li>
+<li>설정에서 다크모드 변경 → 모든 화면 확인</li>
+<li>프로필 수정 → 홈/마이페이지 확인</li>
+</ul>
+
+<h4>Step 2) 각 시나리오 수행 (40분)</h4>
+<ul class="notion-list">
+<li>데이터 변경 후 관련 화면 3개 이상 확인</li>
+<li>동기화 실패 시 스크린샷 캡처</li>
+</ul>
+
+<h4>Step 3) 데이터 정합성 체크리스트 작성 (15분)</h4>
+<table class="notion-table">
+<thead>
+<tr>
+<th>변경 항목</th>
+<th>영향 화면</th>
+<th>확인 결과</th>
+<th>이슈</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>아이템 삭제</td>
+<td>리스트, 상세, 카트</td>
+<td>Pass</td>
+<td>-</td>
+</tr>
+<tr>
+<td>다크모드 ON</td>
+<td>모든 화면</td>
+<td>Fail</td>
+<td>설정 화면만 반영됨</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>3.4 산출물</h3>
+<ul class="notion-list">
+<li>`W2D7_DataFlow.md`: 데이터 흐름 다이어그램</li>
+<li>`W2D7_SyncChecklist.md`: 상태 동기화 체크리스트</li>
+</ul>
+
+<h3>3.5 평가 루브릭</h3>
+<ul class="notion-list">
+<li>(A) 데이터 흐름이 명확히 정리됨</li>
+<li>(B) 동기화 실패 케이스 발견 및 기록</li>
+<li>(C) 영향 범위 파악 완료</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-4" class="content-section">
+            <h2 class="section-title">4) Day 8 — 조합 테스트 설계 (3축 조합)</h2>
+            <div class="section-content">
+                <h3>4.1 학습 목표</h3>
+<ul class="notion-list">
+<li>조합 테스트 축을 선정할 수 있다.</li>
+<li>2×2×2 = 8개 시나리오를 만들 수 있다.</li>
+</ul>
+
+<h3>4.2 이론(핵심 개념)</h3>
+<h4>4.2.1 조합 테스트 필요성</h4>
+<ul class="notion-list">
+<li>실제 사용자 환경은 "조합"으로 결함이 발생</li>
+<li>예: 비로그인 + 딥링크 + 네트워크 느림 = 로그인 후 목적지 복귀 실패</li>
+</ul>
+
+<h4>4.2.2 조합 축 Top 7 (자주 쓰는 것)</h4>
+<p>1. 사용자 상태: 비로그인 / 로그인 / 토큰만료</p>
+<p>2. 라우팅: 일반진입 / 딥링크 / 알림진입</p>
+<p>3. 네트워크: 정상 / 느림 / 끊김</p>
+<p>4. UI 상태: 로딩 / 정상 / 빈 / 에러</p>
+<p>5. 데이터: 없음 / 많음 / 특수문자</p>
+<p>6. 권한: 허용 / 거부 / 설정 변경</p>
+<p>7. 디바이스: 저용량 / 절전 / 저사양</p>
+
+<h4>4.2.3 조합 폭발 방지 규칙</h4>
+<ul class="notion-list">
+<li>축은 <strong>3개만</strong> 선택</li>
+<li>각 축은 <strong>2값만</strong> 선택</li>
+<li>→ 2×2×2 = <strong>8개 시나리오</strong></li>
+</ul>
+
+<h3>4.3 실습(70분)</h3>
+<h4>Step 1) 테스트 대상 기능 선정 (10분)</h4>
+<ul class="notion-list">
+<li>예: "알림을 통한 상세 화면 진입"</li>
+</ul>
+
+<h4>Step 2) 조합 축 3개 선정 (10분)</h4>
+<ul class="notion-list">
+<li>사용자 상태: 비로그인 vs 로그인</li>
+<li>라우팅: 알림진입 vs 일반진입</li>
+<li>네트워크: 느림 vs 정상</li>
+</ul>
+
+<h4>Step 3) 조합표 작성 (20분)</h4>
+<table class="notion-table">
+<thead>
+<tr>
+<th>시나리오</th>
+<th>사용자</th>
+<th>라우팅</th>
+<th>네트워크</th>
+<th>결함 가설</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>비로그인</td>
+<td>알림</td>
+<td>느림</td>
+<td>로그인 후 목적지 복귀 실패</td>
+</tr>
+<tr>
+<td>2</td>
+<td>비로그인</td>
+<td>알림</td>
+<td>정상</td>
+<td>로그인 화면 표시</td>
+</tr>
+<tr>
+<td>3</td>
+<td>비로그인</td>
+<td>일반</td>
+<td>느림</td>
+<td>로딩 상태 표시</td>
+</tr>
+<tr>
+<td>4</td>
+<td>비로그인</td>
+<td>일반</td>
+<td>정상</td>
+<td>정상 진입</td>
+</tr>
+<tr>
+<td>5</td>
+<td>로그인</td>
+<td>알림</td>
+<td>느림</td>
+<td>상세 로딩 지연</td>
+</tr>
+<tr>
+<td>6</td>
+<td>로그인</td>
+<td>알림</td>
+<td>정상</td>
+<td>정상 진입</td>
+</tr>
+<tr>
+<td>7</td>
+<td>로그인</td>
+<td>일반</td>
+<td>느림</td>
+<td>로딩 스피너 표시</td>
+</tr>
+<tr>
+<td>8</td>
+<td>로그인</td>
+<td>일반</td>
+<td>정상</td>
+<td>정상 진입</td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>Step 4) 시나리오 수행 (30분)</h4>
+<ul class="notion-list">
+<li>8개 시나리오 중 최소 5개 수행</li>
+<li>결과 기록</li>
+</ul>
+
+<h3>4.4 산출물</h3>
+<ul class="notion-list">
+<li>`W2D8_CombinationTable.md`: 조합표 (8개 시나리오)</li>
+<li>`W2D8_TestResults.md`: 수행 결과</li>
+</ul>
+
+<h3>4.5 평가 루브릭</h3>
+<ul class="notion-list">
+<li>(A) 조합 축 선정이 합리적</li>
+<li>(B) 8개 시나리오 모두 도출</li>
+<li>(C) 최소 5개 시나리오 수행 완료</li>
+<li>(D) 결함 가설이 구체적</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-5" class="content-section">
+            <h2 class="section-title">5) Day 9 — E2E(End-to-End) 시나리오 작성</h2>
+            <div class="section-content">
+                <h3>5.1 학습 목표</h3>
+<ul class="notion-list">
+<li>E2E 시나리오를 작성할 수 있다.</li>
+<li>사용자 목적 달성 관점으로 테스트를 설계한다.</li>
+</ul>
+
+<h3>5.2 이론(핵심 개념)</h3>
+<h4>5.2.1 E2E란?</h4>
+<ul class="notion-list">
+<li><strong>정의</strong>: 사용자가 "목적을 달성"하는 전체 흐름</li>
+<li><strong>예시</strong>: 알림 → 상세 → 댓글 작성 → 완료</li>
+</ul>
+
+<h4>5.2.2 E2E vs 단위 테스트</h4>
+<table class="notion-table">
+<thead>
+<tr>
+<th>구분</th>
+<th>단위 테스트</th>
+<th>E2E 테스트</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>범위</td>
+<td>화면/기능 하나</td>
+<td>여러 화면/기능 연결</td>
+</tr>
+<tr>
+<td>목적</td>
+<td>기능 동작 확인</td>
+<td>사용자 목적 달성 확인</td>
+</tr>
+<tr>
+<td>예시</td>
+<td>로그인 버튼 클릭</td>
+<td>로그인 → 홈 → 상세 → 액션</td>
+</tr>
+</tbody>
+</table>
+
+
+<h4>5.2.3 E2E 시나리오 작성 공식</h4>
+<pre class="code-block"><code class="">제목: [사용자 목적] 달성 시나리오
+<p>사전 조건: (계정/데이터/권한)</p>
+<p>절차:</p>
+<p>1. 알림 클릭</p>
+<p>2. 로그인 수행</p>
+<p>3. 상세 화면 진입</p>
+<p>4. 댓글 작성</p>
+<p>5. 저장 확인</p>
+<p>기대 결과:</p>
+<ul class="notion-list">
+<li>댓글이 저장됨</li>
+<li>알림 배지 제거</li>
+<li>상세 화면에서 댓글 표시</li>
+</ul>
+</code></pre>
+
+<h3>5.3 실습(70분)</h3>
+<h4>Step 1) 핵심 사용자 목적 5개 선정 (15분)</h4>
+<p>예시:</p>
+<ul class="notion-list">
+<li>상품 구매</li>
+<li>콘텐츠 공유</li>
+<li>설정 변경</li>
+<li>검색 → 상세 조회</li>
+<li>알림 → 액션 수행</li>
+</ul>
+
+<h4>Step 2) E2E 시나리오 5개 작성 (30분)</h4>
+<ul class="notion-list">
+<li>각 목적당 1개 시나리오</li>
+<li>사전 조건 / 절차 / 기대 결과 모두 포함</li>
+</ul>
+
+<h4>Step 3) E2E 시나리오 수행 (25분)</h4>
+<ul class="notion-list">
+<li>최소 3개 시나리오 수행</li>
+<li>실패 시 상세 기록</li>
+</ul>
+
+<h3>5.4 산출물</h3>
+<ul class="notion-list">
+<li>`W2D9_E2E_Scenarios.md`: E2E 시나리오 5개</li>
+<li>`W2D9_E2E_Results.md`: 수행 결과</li>
+</ul>
+
+<h3>5.5 E2E 시나리오 템플릿</h3>
+<p>```markdown</p>
+            </div>
+        </section>
+        
+        <section id="section-6" class="content-section">
+            <h2 class="section-title">E2E-001: 알림을 통한 댓글 작성</h2>
+            <div class="section-content">
+                
+<h3>사전 조건</h3>
+<ul class="notion-list">
+<li>로그인 가능한 계정: test@example.com</li>
+<li>알림 수신 설정 ON</li>
+<li>네트워크 정상</li>
+</ul>
+
+<h3>절차</h3>
+<p>1. 푸시 알림 수신 (새 댓글 알림)</p>
+<p>2. 알림 클릭</p>
+<p>3. 로그인 화면 표시 → 로그인 수행</p>
+<p>4. 상세 화면 진입 확인</p>
+<p>5. 댓글 입력 후 저장</p>
+
+<h3>기대 결과</h3>
+<ul class="notion-list">
+<li>로그인 후 상세 화면으로 자동 이동</li>
+<li>댓글이 정상 저장됨</li>
+<li>알림 배지 제거됨</li>
+</ul>
+
+<h3>수행 결과</h3>
+<ul class="notion-list">
+<li>[ ] Pass</li>
+<li>[ ] Fail (사유: )</li>
+</ul>
+<p>```</p>
+
+<h3>5.6 평가 루브릭</h3>
+<ul class="notion-list">
+<li>(A) E2E 시나리오가 "사용자 목적" 관점</li>
+<li>(B) 절차가 5단계 이상</li>
+<li>(C) 기대 결과가 구체적</li>
+<li>(D) 최소 3개 시나리오 수행 완료</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-7" class="content-section">
+            <h2 class="section-title">6) Day 10 — 테스트 설계 문서 작성 및 Week 2 총정리</h2>
+            <div class="section-content">
+                <h3>6.1 학습 목표</h3>
+<ul class="notion-list">
+<li>Week 2에서 배운 모든 내용을 통합하여 테스트 설계 문서를 작성한다.</li>
+</ul>
+
+<h3>6.2 이론(핵심 개념)</h3>
+<h4>6.2.1 테스트 설계 문서 구조</h4>
+<p>1. <strong>테스트 범위</strong>: 어떤 기능/화면을 테스트할 것인가</p>
+<p>2. <strong>화면 흐름도</strong>: 라우팅 및 데이터 흐름</p>
+<p>3. <strong>조합 테스트</strong>: 3축 조합 시나리오</p>
+<p>4. <strong>E2E 시나리오</strong>: 핵심 사용자 목적 달성 시나리오</p>
+<p>5. <strong>테스트 환경</strong>: 기기/OS/계정/데이터</p>
+<p>6. <strong>예상 결함 가설</strong>: Top 10</p>
+
+<h3>6.3 실습(80분) - 테스트 설계 문서 작성</h3>
+<h4>주제: "검색 → 필터 → 상세 조회" 기능</h4>
+
+<strong>요구사항:</strong>
+<p>1. 화면 흐름도 (최소 5개 화면)</p>
+<p>2. 데이터 흐름 (검색어/필터 상태 동기화)</p>
+<p>3. 조합 테스트 (3축 × 8개 시나리오)</p>
+<p>4. E2E 시나리오 3개</p>
+<p>5. 예상 결함 가설 10개</p>
+
+<h4>Step 1) 범위 정의 (10분)</h4>
+<ul class="notion-list">
+<li>검색, 필터, 리스트, 상세 화면</li>
+</ul>
+
+<h4>Step 2) 화면/데이터 흐름도 (20분)</h4>
+<ul class="notion-list">
+<li>화면 전환 경로</li>
+<li>검색어/필터 데이터 전달 경로</li>
+</ul>
+
+<h4>Step 3) 조합 테스트 설계 (20분)</h4>
+<ul class="notion-list">
+<li>축 선정: 사용자 상태 / 네트워크 / 데이터</li>
+<li>8개 시나리오 작성</li>
+</ul>
+
+<h4>Step 4) E2E 시나리오 작성 (20분)</h4>
+<ul class="notion-list">
+<li>검색 → 필터 → 상세 조회</li>
+<li>검색 → 정렬 → 상세 조회</li>
+<li>검색 → 저장 → 재검색</li>
+</ul>
+
+<h4>Step 5) 결함 가설 도출 (10분)</h4>
+<ul class="notion-list">
+<li>조합 테스트 기반 결함 가설 10개</li>
+</ul>
+
+<h3>6.4 산출물</h3>
+<ul class="notion-list">
+<li>`W2_TestDesign_Search.md`: 테스트 설계 문서</li>
+</ul>
+
+<h3>6.5 테스트 설계 문서 템플릿</h3>
+<p>```markdown</p>
+
+            </div>
+        </section>
+        
+        <section id="section-8" class="content-section">
+            <h2 class="section-title">1. 테스트 범위</h2>
+            <div class="section-content">
+                <ul class="notion-list">
+<li>In Scope: 검색, 필터, 정렬, 리스트, 상세</li>
+<li>Out of Scope: 추천 검색어, 검색 이력</li>
+</ul>
+
+            </div>
+        </section>
+        
+        <section id="section-9" class="content-section">
+            <h2 class="section-title">2. 화면 흐름도</h2>
+            <div class="section-content">
+                <p>[홈] → [검색] → [리스트] → [상세]</p>
+<p>↓</p>
+<p>[필터/정렬]</p>
+
+            </div>
+        </section>
+        
+        <section id="section-10" class="content-section">
+            <h2 class="section-title">3. 데이터 흐름</h2>
+            <div class="section-content">
+                <ul class="notion-list">
+<li>검색어: 검색 → 리스트 → 상세 (전달)</li>
+<li>필터 상태: 리스트 ↔ 필터 화면 (동기화)</li>
+</ul>
+
+            </div>
+        </section>
+        
+        <section id="section-11" class="content-section">
+            <h2 class="section-title">4. 조합 테스트</h2>
+            <div class="section-content">
+                <h3>축 선정</h3>
+<ul class="notion-list">
+<li>사용자 상태: 비로그인 / 로그인</li>
+<li>네트워크: 정상 / 느림</li>
+<li>데이터: 많음 / 없음</li>
+</ul>
+
+<h3>시나리오 (8개)</h3>
+<p>(조합표 작성)</p>
+
+            </div>
+        </section>
+        
+        <section id="section-12" class="content-section">
+            <h2 class="section-title">5. E2E 시나리오</h2>
+            <div class="section-content">
+                <h3>E2E-001: 검색 → 필터 → 상세 조회</h3>
+<p>(상세 시나리오 작성)</p>
+
+            </div>
+        </section>
+        
+        <section id="section-13" class="content-section">
+            <h2 class="section-title">6. 예상 결함 가설 Top 10</h2>
+            <div class="section-content">
+                <p>1. 네트워크 느림 + 검색 중 필터 변경 → 중복 요청</p>
+<p>2. 특수문자 검색어 → 인코딩 오류</p>
+<p>3. ...</p>
+<p>```</p>
+
+<h3>6.6 평가 루브릭</h3>
+<ul class="notion-list">
+<li>(A) 테스트 범위가 명확하고 구체적</li>
+<li>(B) 화면/데이터 흐름도 완성</li>
+<li>(C) 조합 테스트 8개 시나리오 작성</li>
+<li>(D) E2E 시나리오 3개 이상</li>
+<li>(E) 결함 가설 10개 도출</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-14" class="content-section">
+            <h2 class="section-title">7) Week 2 최종 평가 (패키지 제출)</h2>
+            <div class="section-content">
+                <h3>7.1 최종 제출물 (필수)</h3>
+<p>1. 화면 흐름도 (Day 6)</p>
+<p>2. 데이터 흐름 및 동기화 체크리스트 (Day 7)</p>
+<p>3. 조합 테스트 시나리오 8개 (Day 8)</p>
+<p>4. E2E 시나리오 5개 (Day 9)</p>
+<p>5. 테스트 설계 문서 (Day 10)</p>
+
+<h3>7.2 최종 평가 기준</h3>
+<ul class="notion-list">
+<li><strong>분석 능력</strong>: 화면/데이터 흐름 파악 정확성</li>
+<li><strong>설계 능력</strong>: 조합 테스트 및 E2E 시나리오 품질</li>
+<li><strong>문서화</strong>: 테스트 설계 문서 완성도</li>
+<li><strong>결함 예측</strong>: 결함 가설 합리성</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-15" class="content-section">
+            <h2 class="section-title">8) 강사용 운영 팁</h2>
+            <div class="section-content">
+                <ul class="notion-list">
+<li>화면 흐름도는 실제 앱을 직접 사용하며 그려야 효과적</li>
+<li>조합 테스트는 "3축만" 강제하여 폭발 방지</li>
+<li>E2E 시나리오는 "사용자 목적"을 먼저 정의하도록 유도</li>
+<li>테스트 설계 문서는 "읽는 사람"이 이해할 수 있는지 확인</li>
+<li>Week 2 종료 시 "테스트를 설계할 수 있다"는 자신감 제공</li>
+</ul>
+
+<hr class="divider">
+
+            </div>
+        </section>
+        
+        <section id="section-16" class="content-section">
+            <h2 class="section-title">9) Week 2 → Week 3 연결</h2>
+            <div class="section-content">
+                <p>Week 2에서 배운 설계 능력을 바탕으로, Week 3에서는:</p>
+<ul class="notion-list">
+<li>실제 결함 발견 훈련</li>
+<li>결함 우선순위 및 트리아지</li>
+<li>재현 가능한 결함 보고서 작성</li>
+<li>회귀 테스트 설계</li>
+</ul>
+
+<p>으로 진행됩니다.</p>
+
+<hr class="divider">
+
+<p>끝.</p>
+
+            </div>
+        </section>
+        
+    </main>
+
+    <script>
+        // Active TOC highlighting on scroll
+        const sections = document.querySelectorAll('.content-section');
+        const tocItems = document.querySelectorAll('.toc-item');
+        
+        function highlightTOC() {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.pageYOffset >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            tocItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('href') === '#' + current) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', highlightTOC);
+        window.addEventListener('load', highlightTOC);
+    </script>
+</body>
+</html>
